@@ -1,0 +1,5 @@
+{
+  "name": "EmojiGen Pro",
+  "description": "Generate animated GIF sticker packs from your photos using Gemini 3 Pro.",
+  "requestFramePermissions": []
+}
