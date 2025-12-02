@@ -1,5 +1,6 @@
 import React from 'react';
-import { Sparkles, Dices, Loader2, ChevronDown, Type, Palette, Paintbrush } from 'lucide-react';
+import { Sparkles, Dices, Loader2, ChevronDown, Type, Palette, Paintbrush, Video, Grid3X3, Edit3 } from 'lucide-react';
+import { GenerationMode } from '../types';
 
 export interface Category {
   id: string;
@@ -8,11 +9,14 @@ export interface Category {
 }
 
 interface Props {
+  mode: GenerationMode;
+  onModeChange: (mode: GenerationMode) => void;
   emotions: string[];
   categories: Category[];
   selectedCategory: string;
   onCategoryChange: (id: string) => void;
   onChange: (index: number, value: string) => void;
+  onBulkChange: (value: string) => void;
   onRandomize: () => void;
   isRandomizing: boolean;
   customText: string;
@@ -25,11 +29,14 @@ interface Props {
 }
 
 const EmotionForm: React.FC<Props> = ({ 
+  mode,
+  onModeChange,
   emotions, 
   categories,
   selectedCategory,
   onCategoryChange,
-  onChange, 
+  onChange,
+  onBulkChange,
   onRandomize,
   isRandomizing,
   customText,
@@ -42,29 +49,72 @@ const EmotionForm: React.FC<Props> = ({
 }) => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      
+      {/* Mode Switcher */}
+      <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+        <button
+          onClick={() => onModeChange('animated')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${
+            mode === 'animated' 
+            ? 'bg-white text-indigo-600 shadow-sm' 
+            : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Video className="w-4 h-4" /> Animated (4 GIFs)
+        </button>
+        <button
+          onClick={() => onModeChange('static')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${
+            mode === 'static' 
+            ? 'bg-white text-indigo-600 shadow-sm' 
+            : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Grid3X3 className="w-4 h-4" /> Static (24 PNGs)
+        </button>
+      </div>
+
       <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-start sm:items-center lg:items-start xl:items-center justify-between mb-6 gap-4">
         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-yellow-500" />
-          Emotions
+          {mode === 'animated' ? 'Emotions (4 Sets)' : 'Emotions (24 Items)'}
         </h3>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {emotions.map((emotion, index) => (
-          <div key={index} className="relative">
-            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 ml-1">
-              Emotion {index + 1}
-            </label>
-            <input
-              type="text"
-              value={emotion}
-              onChange={(e) => onChange(index, e.target.value)}
-              placeholder={`例如：${['开心', '愤怒', '悲伤', '兴奋'][index]}`}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-gray-800 bg-gray-50 focus:bg-white"
+      {mode === 'animated' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {emotions.slice(0, 4).map((emotion, index) => (
+            <div key={index} className="relative">
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 ml-1">
+                Emotion {index + 1}
+              </label>
+              <input
+                type="text"
+                value={emotion}
+                onChange={(e) => onChange(index, e.target.value)}
+                placeholder={`Example: ${['开心', '愤怒', '悲伤', '兴奋'][index]}`}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-gray-800 bg-gray-50 focus:bg-white"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mb-6">
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 ml-1 flex justify-between">
+            <span>Emotion List (Comma separated or one per line)</span>
+            <span className="text-indigo-500">{emotions.length} / 24</span>
+          </label>
+          <div className="relative">
+            <Edit3 className="w-4 h-4 text-gray-400 absolute top-3 left-3" />
+            <textarea
+              value={emotions.join(', ')}
+              onChange={(e) => onBulkChange(e.target.value)}
+              placeholder="Enter 24 emotions here..."
+              className="w-full px-4 pl-10 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-gray-800 bg-gray-50 focus:bg-white min-h-[160px] text-sm leading-relaxed"
             />
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       <div className="mb-6 pt-4 border-t border-gray-100">
         <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-2">

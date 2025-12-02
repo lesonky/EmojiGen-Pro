@@ -1,17 +1,23 @@
-export interface GeneratedGif {
+export type GenerationMode = 'animated' | 'static';
+
+export type DownloadFormat = 'zip' | 'emoticon' | 'wemoji';
+
+export interface GeneratedItem {
   id: string;
   blobUrl: string;
   blob: Blob;
   emotion: string;
+  isAnimated: boolean;
 }
 
 export interface GenerationStatus {
-  step: 'idle' | 'generating_image' | 'processing_gifs' | 'complete' | 'error';
+  step: 'idle' | 'generating_image' | 'processing' | 'complete' | 'error';
   message?: string;
   progress?: number;
 }
 
 export interface AppState {
+  mode: GenerationMode;
   sourceImage: string | null; // Base64
   emotions: string[];
   customText: string;
@@ -19,7 +25,7 @@ export interface AppState {
   removeBackground: boolean;
   style: string;
   generatedImage: string | null; // Base64 of the grid
-  gifs: GeneratedGif[];
+  items: GeneratedItem[];
 }
 
 // Extend Window interface for external libraries

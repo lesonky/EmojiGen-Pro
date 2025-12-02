@@ -15,20 +15,24 @@ export const requestApiKey = async (): Promise<void> => {
   }
 };
 
-export const generateEmotionSuggestions = async (categoryPrompt: string): Promise<string[]> => {
+export const generateEmotionSuggestions = async (categoryPrompt: string, count: number = 4): Promise<string[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Generate 4 distinct, creative, and short (1-5 characters) Chinese emotion names or phrases for a sticker pack.
+      model: 'gemini-3-pro-preview',
+      contents: `Generate ${count} distinct, creative, and short (1-8 characters) Chinese emotion names or phrases for a sticker pack.
       Target Audience/Style: ${categoryPrompt}.
-      Examples of style:
-      - Daily: 开心, 难过, 晚安, 谢谢
-      - Work: 收到, 加班中, 摸鱼, 只要干不死
-      - Meme: 泰裤辣, 尊嘟假嘟, 汗流浃背, 破防了
       
-      Return ONLY a JSON array of 4 strings.`,
+      Examples of style:
+      - Daily: 开心, 难过, 晚安, 谢谢, 好的, 没问题
+      - Work: 收到, 加班中, 摸鱼, 只要干不死, 就往死里干
+      - Meme: 泰裤辣, 尊嘟假嘟, 汗流浃背, 破防了, 急了
+      
+      Requirements:
+      - Strictly return a JSON array of strings.
+      - No duplicate meanings if possible.
+      - Total count must be exactly ${count}.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -39,12 +43,20 @@ export const generateEmotionSuggestions = async (categoryPrompt: string): Promis
     });
 
     const text = response.text;
-    if (!text) return ["开心", "难过", "生气", "点赞"];
-    return JSON.parse(text);
+    if (!text) {
+      // Fallback
+      return Array(count).fill("").map((_, i) => `表情${i+1}`);
+    }
+    const parsed = JSON.parse(text);
+    // Ensure we have exactly the requested amount
+    if (parsed.length < count) {
+      return [...parsed, ...Array(count - parsed.length).fill("新表情")];
+    }
+    return parsed.slice(0, count);
   } catch (error) {
     console.error("Failed to generate emotions:", error);
     // Fallback if API fails
-    return ["开心", "难过", "生气", "点赞"];
+    return Array(count).fill("").map((_, i) => `表情${i+1}`);
   }
 };
 
@@ -53,7 +65,8 @@ export const generateEmojiSheet = async (
   emotions: string[],
   customText: string,
   customTextColor: string,
-  style: string = "Q版 LINE"
+  style: string = "Q版 LINE",
+  mode: 'animated' | 'static' = 'animated'
 ): Promise<string> => {
   // Always create a new instance to ensure the latest key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -64,11 +77,24 @@ export const generateEmojiSheet = async (
 
   const targetStyle = style && style.trim() !== "" ? style : "Q版 LINE";
 
+  let layoutInstruction = "";
+  if (mode === 'animated') {
+    layoutInstruction = `
+布局结构：严格使用 4x6 网格布局。内容包含 ${emotions.length} 个表情（${emotions.join(', ')}）。
+动画逻辑：每个表情占据一整排（6 格），这 6 格构成一个流畅的连续动作序列（关键帧）。每一帧都必须是画质精细、结构完整的半身像，且每一帧旁边都要包含对应表情的**手写简体中文**配文。`;
+  } else {
+    // Static mode
+    layoutInstruction = `
+布局结构：严格使用 4x6 网格布局，共 24 个格子。
+内容逻辑：请生成 **24 个完全不同的表情**，对应以下列表：
+${emotions.join(', ')}。
+每个格子放置一个独立的表情，无需连续动作。每个表情都必须是画质精细、结构完整的半身像，且旁边都要包含对应表情的**手写简体中文**配文。`;
+  }
+
   const prompt = `请深度分析原图中角色的**关键外貌特征**（如发型、发色、眼睛形状、衣着纹理及头饰配件），在精准还原这些特征并保持极高辨识度的基础上，为我生成该角色的绘制 ${targetStyle} 风格半身像贴纸表情包。
   
 画面风格：${targetStyle} 风格，画风可爱生动。
-布局结构：严格使用 4x6 网格布局。内容包含 ${emotions.join(', ')} 这四个表情。
-动画逻辑：每个表情占据一整排（6 格），这 6 格构成一个流畅的连续动作序列（关键帧）。每一帧都必须是画质精细、结构完整的半身像，且每一帧旁边都要包含对应表情的**手写简体中文**配文。
+${layoutInstruction}
 ${customTextInstruction}
 增强表现：请根据表情含义，灵活使用丰富的小道具（如漫符、特效、心情符号）来增强情绪表达。
 其他硬性需求：不要原图复制，必须进行二创。严格对齐 4x6 网格，确保每个表情都独立居中于网格内，互不粘连，便于程序裁切。背景色需为与角色主体区分度高的纯色（如浅灰），方便自动去背景。
@@ -100,7 +126,7 @@ ${customTextInstruction}
       config: {
         imageConfig: {
           imageSize: "2K",
-          aspectRatio: "3:2", // Closest supported wide format to 3:2
+          aspectRatio: "3:2", // 4x6 grid fits well in 3:2 landscape
         },
       },
     });
