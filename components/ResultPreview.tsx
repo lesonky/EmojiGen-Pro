@@ -18,6 +18,18 @@ const ResultPreview: React.FC<Props> = ({ items, gridImage }) => {
     downloadAllAsZip(items, gridImage, downloadFormat);
   };
 
+  const getItemExtension = (item: GeneratedItem) => {
+    if (item.blob.type === 'image/gif') return 'gif';
+    if (item.isAnimated) return 'gif';
+    return 'png';
+  };
+
+  const getItemLabel = (item: GeneratedItem) => {
+    const ext = getItemExtension(item).toUpperCase();
+    if (item.isAnimated) return ext;
+    return `${ext}`;
+  };
+
   return (
     <div className="animate-[fadeIn_0.5s_ease-out]">
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-6 gap-4">
@@ -83,12 +95,12 @@ const ResultPreview: React.FC<Props> = ({ items, gridImage }) => {
                 <div className="flex justify-between items-center mb-1">
                   <h4 className="font-semibold text-gray-800 truncate text-xs sm:text-sm" title={item.emotion}>{item.emotion}</h4>
                   <span className={`inline-block text-[10px] font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-500`}>
-                    {item.isAnimated ? 'GIF' : 'PNG'}
+                    {getItemLabel(item)}
                   </span>
                 </div>
                 <a 
                   href={item.blobUrl} 
-                  download={`${item.emotion.replace(/[^\w\u4e00-\u9fa5]/g, '_')}.${item.isAnimated ? 'gif' : 'png'}`}
+                  download={`${item.emotion.replace(/[^\w\u4e00-\u9fa5]/g, '_')}.${getItemExtension(item)}`}
                   className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 mt-1"
                 >
                   Download

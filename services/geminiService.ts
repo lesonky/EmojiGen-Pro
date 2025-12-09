@@ -66,7 +66,8 @@ export const generateEmojiSheet = async (
   customText: string,
   customTextColor: string,
   style: string = "Q版 LINE",
-  mode: 'animated' | 'static' = 'animated'
+  mode: 'animated' | 'static' = 'animated',
+  animatedCount: number = 4
 ): Promise<string> => {
   // Always create a new instance to ensure the latest key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -79,9 +80,24 @@ export const generateEmojiSheet = async (
 
   let layoutInstruction = "";
   if (mode === 'animated') {
-    layoutInstruction = `
+    if (animatedCount === 1) {
+      layoutInstruction = `
+布局结构：严格使用 4x6 网格布局，共 24 个格子。
+内容逻辑：这 24 个格子构成**唯一**的一个长连贯动画序列，主题是“${emotions[0]}”。
+请绘制一个流畅的连续动作，从第 1 格（左上）到第 24 格（右下）依次推进，类似于每秒 20 帧的动画关键帧。每一帧都必须是画质精细、结构完整的半身像。配文（如果有）需保持位置和内容固定。`;
+    } else if (animatedCount === 2) {
+      layoutInstruction = `
+布局结构：严格使用 4x6 网格布局，共 24 个格子。
+内容逻辑：
+1. 前 12 个格子（第 1-2 排）构成第一个动画序列，主题是“${emotions[0]}”。
+2. 后 12 个格子（第 3-4 排）构成第二个动画序列，主题是“${emotions[1]}”。
+每一组 12 格构成一个流畅的连续动作。每一帧都必须是画质精细、结构完整的半身像。`;
+    } else {
+      // Default: 4 animations (6 frames each)
+      layoutInstruction = `
 布局结构：严格使用 4x6 网格布局。内容包含 ${emotions.length} 个表情（${emotions.join(', ')}）。
 动画逻辑：每个表情占据一整排（6 格），这 6 格构成一个流畅的连续动作序列（关键帧）。每一帧都必须是画质精细、结构完整的半身像，且每一帧旁边都要包含对应表情的**手写简体中文**配文。`;
+    }
   } else {
     // Static mode
     layoutInstruction = `

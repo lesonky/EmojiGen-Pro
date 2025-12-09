@@ -18,6 +18,7 @@ export interface GenerationStatus {
 
 export interface AppState {
   mode: GenerationMode;
+  animatedCount: 1 | 2 | 4;
   sourceImage: string | null; // Base64
   emotions: string[];
   customText: string;

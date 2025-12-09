@@ -19,10 +19,14 @@ const AVATAR_STYLES = [
   'Q版 LINE',
   'JOJO',
   '吉卜力',
-  '迪士尼',
-  '皮克斯',
+  '迪士尼 3D',
+  '迪士尼 2D',
+  '皮克斯 3D',
+  '皮克斯 2D',
   'Chibi',
-  '粘土玩偶'
+  '粘土玩偶',
+  '毛绒玩偶',
+  '卡通贴纸'
 ];
 
 const DEFAULT_ANIMATED_EMOTIONS = ['开心', '哭泣', '生气', '点赞'];
@@ -41,6 +45,7 @@ const RANDOM_EMOTIONS = ['开心', '难过', '愤怒', '惊讶', '点赞', '拒�
 function App() {
   const [state, setState] = useState<AppState>({
     mode: 'animated',
+    animatedCount: 4, // Default to 4
     sourceImage: null,
     emotions: DEFAULT_ANIMATED_EMOTIONS,
     customText: '',
@@ -63,6 +68,10 @@ function App() {
       items: [], // Clear previous items on mode switch
       generatedImage: null // Clear previous grid
     }));
+  };
+
+  const handleAnimatedCountChange = (count: 1 | 2 | 4) => {
+    setState(prev => ({ ...prev, animatedCount: count }));
   };
 
   const handleImageSelect = (base64: string) => {
@@ -90,13 +99,32 @@ function App() {
       const randomStyle = AVATAR_STYLES[Math.floor(Math.random() * AVATAR_STYLES.length)];
       
       const category = EMOTION_CATEGORIES.find(c => c.id === emotionCategory) || EMOTION_CATEGORIES[0];
-      const count = state.mode === 'animated' ? 4 : 24;
+      
+      // Determine how many emotions to request
+      const count = state.mode === 'animated' ? state.animatedCount : 24;
       
       const suggestions = await generateEmotionSuggestions(category.prompt, count);
       
+      // If we got fewer suggestions than needed for animated count 4, fill remaining?
+      // But generateEmotionSuggestions already handles basic fallback filling.
+      // If we are in animated mode with count 4 but user switches to 1, we still have 4 items in array
+      // but only use 1. If we randomize for count 1, we get 1 item.
+      // We should potentially preserve array length 4 for animated mode to avoid issues when switching back?
+      // However, current implementation of handleModeChange resets to length 4.
+      // If user is in count 1 and hits random, we get 1 emotion. If they switch to count 4, they have 1 emotion + 3 undefined/old?
+      // Let's ensure we always have at least 4 items in the array for animated mode to be safe when switching.
+      
+      let finalEmotions = suggestions;
+      if (state.mode === 'animated' && finalEmotions.length < 4) {
+         // Pad with existing or default to keep array sizable if user switches count later
+         const remaining = 4 - finalEmotions.length;
+         const pad = DEFAULT_ANIMATED_EMOTIONS.slice(0, remaining); // simplistic fallback
+         finalEmotions = [...finalEmotions, ...pad];
+      }
+      
       setState(prev => ({ 
         ...prev, 
-        emotions: suggestions,
+        emotions: finalEmotions,
         style: randomStyle
       }));
     } catch (error) {
@@ -119,14 +147,20 @@ function App() {
     setState(prev => ({ ...prev, generatedImage: null, items: [] }));
 
     try {
+      // Pass the slice of emotions relevant to the current count
+      const activeEmotions = state.mode === 'animated' 
+        ? state.emotions.slice(0, state.animatedCount) 
+        : state.emotions;
+
       // 1. Generate the grid image
       const generatedGrid = await generateEmojiSheet(
         state.sourceImage,
-        state.emotions,
+        activeEmotions,
         state.customText,
         state.customTextColor,
         state.style,
-        state.mode
+        state.mode,
+        state.animatedCount
       );
 
       setState(prev => ({ ...prev, generatedImage: generatedGrid }));
@@ -137,14 +171,15 @@ function App() {
       if (state.mode === 'animated') {
         items = await processImageToGifs(
           generatedGrid,
-          state.emotions,
+          activeEmotions,
           state.removeBackground,
+          state.animatedCount,
           (progress) => setStatus(prev => ({ ...prev, progress }))
         );
       } else {
         items = await processImageToStatic(
           generatedGrid,
-          state.emotions,
+          activeEmotions,
           state.removeBackground,
           (progress) => setStatus(prev => ({ ...prev, progress }))
         );
@@ -186,6 +221,8 @@ function App() {
             <EmotionForm 
               mode={state.mode}
               onModeChange={handleModeChange}
+              animatedCount={state.animatedCount}
+              onAnimatedCountChange={handleAnimatedCountChange}
               emotions={state.emotions}
               categories={EMOTION_CATEGORIES}
               selectedCategory={emotionCategory}

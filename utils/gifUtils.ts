@@ -73,6 +73,7 @@ export const processImageToGifs = async (
   imageSrc: string,
   emotions: string[],
   removeBg: boolean,
+  animatedCount: number,
   onProgress: (percent: number) => void
 ): Promise<GeneratedItem[]> => {
   const img = await loadImage(imageSrc);
@@ -87,14 +88,25 @@ export const processImageToGifs = async (
 
   const rows = 4;
   const cols = 6;
+  const totalCells = rows * cols; // 24
+  const framesPerGif = totalCells / animatedCount;
+
   const cellWidth = Math.floor(canvas.width / cols);
   const cellHeight = Math.floor(canvas.height / rows);
   const outputSize = Math.min(cellWidth, cellHeight);
 
+  // Determine delay based on count
+  // 1 GIF: 24 frames -> 0.05s = 50ms
+  // 2 GIFs: 12 frames -> 0.1s = 100ms
+  // 4 GIFs: 6 frames -> 0.3s = 300ms (default)
+  let delay = 300;
+  if (animatedCount === 1) delay = 50;
+  else if (animatedCount === 2) delay = 100;
+
   const items: GeneratedItem[] = [];
   const workerScript = await getWorkerBlob();
 
-  for (let r = 0; r < rows; r++) {
+  for (let i = 0; i < animatedCount; i++) {
     const gif = new window.GIF({
       workers: 2,
       quality: 10,
@@ -104,7 +116,11 @@ export const processImageToGifs = async (
       transparent: removeBg ? 0x000000 : null,
     });
 
-    for (let c = 0; c < cols; c++) {
+    for (let f = 0; f < framesPerGif; f++) {
+      const globalIndex = i * framesPerGif + f;
+      const r = Math.floor(globalIndex / cols);
+      const c = globalIndex % cols;
+
       const sx = c * cellWidth;
       const sy = r * cellHeight;
 
@@ -129,16 +145,16 @@ export const processImageToGifs = async (
         removeBackgroundFromCanvas(frameCtx, outputSize, outputSize);
       }
 
-      gif.addFrame(frameCtx, { delay: 300, copy: true });
+      gif.addFrame(frameCtx, { delay: delay, copy: true });
     }
 
     await new Promise<void>((resolve) => {
       gif.on('finished', (blob: Blob) => {
         items.push({
-          id: `gif-${r}-${Date.now()}`,
+          id: `gif-${i}-${Date.now()}`,
           blob,
           blobUrl: URL.createObjectURL(blob),
-          emotion: emotions[r] || `Emotion ${r + 1}`,
+          emotion: emotions[i] || `Emotion ${i + 1}`,
           isAnimated: true
         });
         resolve();
@@ -146,7 +162,7 @@ export const processImageToGifs = async (
       gif.render();
     });
 
-    onProgress(((r + 1) / rows) * 100);
+    onProgress(((i + 1) / animatedCount) * 100);
   }
 
   return items;
@@ -175,6 +191,8 @@ export const processImageToStatic = async (
 
   const items: GeneratedItem[] = [];
   const totalItems = rows * cols;
+  
+  const workerScript = await getWorkerBlob();
 
   for (let i = 0; i < totalItems; i++) {
     const r = Math.floor(i / cols);
@@ -203,16 +221,29 @@ export const processImageToStatic = async (
       removeBackgroundFromCanvas(frameCtx, outputSize, outputSize);
     }
 
-    const blob = await new Promise<Blob>((resolve) => 
-      frameCanvas.toBlob(b => resolve(b!), 'image/png')
-    );
+    // Convert static images to GIF format using GIF.js for better compatibility/consistency
+    const gif = new window.GIF({
+      workers: 2,
+      quality: 10,
+      width: outputSize,
+      height: outputSize,
+      workerScript: workerScript,
+      transparent: removeBg ? 0x000000 : null,
+    });
+    
+    gif.addFrame(frameCtx, { delay: 0, copy: true });
+
+    const blob = await new Promise<Blob>((resolve) => {
+      gif.on('finished', (b: Blob) => resolve(b));
+      gif.render();
+    });
 
     items.push({
       id: `static-${i}-${Date.now()}`,
       blob,
       blobUrl: URL.createObjectURL(blob),
       emotion: emotions[i] || `Emotion ${i + 1}`,
-      isAnimated: false
+      isAnimated: false 
     });
 
     onProgress(((i + 1) / totalItems) * 100);
@@ -229,7 +260,10 @@ export const downloadAllAsZip = async (items: GeneratedItem[], gridImage: string
     // Flat structure, semantic names, includes source grid
     
     items.forEach((item, index) => {
-      const ext = item.isAnimated ? 'gif' : 'png';
+      let ext = 'png';
+      if (item.blob.type === 'image/gif') ext = 'gif';
+      else if (item.isAnimated) ext = 'gif';
+
       const safeName = item.emotion.replace(/[^\w\u4e00-\u9fa5]/g, '_') || `item_${index}`;
       zip.file(`${safeName}.${ext}`, item.blob);
     });
@@ -256,7 +290,10 @@ export const downloadAllAsZip = async (items: GeneratedItem[], gridImage: string
     
     // Add images
     items.forEach((item, index) => {
-      const ext = item.isAnimated ? 'gif' : 'png';
+      let ext = 'png';
+      if (item.blob.type === 'image/gif') ext = 'gif';
+      else if (item.isAnimated) ext = 'gif';
+
       // WeChat requires sequential naming usually (00, 01, 02...)
       const fileName = `${index.toString().padStart(2, '0')}.${ext}`;
       

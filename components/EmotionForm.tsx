@@ -11,6 +11,8 @@ export interface Category {
 interface Props {
   mode: GenerationMode;
   onModeChange: (mode: GenerationMode) => void;
+  animatedCount: 1 | 2 | 4;
+  onAnimatedCountChange: (count: 1 | 2 | 4) => void;
   emotions: string[];
   categories: Category[];
   selectedCategory: string;
@@ -31,6 +33,8 @@ interface Props {
 const EmotionForm: React.FC<Props> = ({ 
   mode,
   onModeChange,
+  animatedCount,
+  onAnimatedCountChange,
   emotions, 
   categories,
   selectedCategory,
@@ -60,7 +64,7 @@ const EmotionForm: React.FC<Props> = ({
             : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          <Video className="w-4 h-4" /> Animated (4 GIFs)
+          <Video className="w-4 h-4" /> Animated GIFs
         </button>
         <button
           onClick={() => onModeChange('static')}
@@ -74,30 +78,54 @@ const EmotionForm: React.FC<Props> = ({
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-start sm:items-center lg:items-start xl:items-center justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-start sm:items-center lg:items-start xl:items-center justify-between mb-4 gap-4">
         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-yellow-500" />
-          {mode === 'animated' ? 'Emotions (4 Sets)' : 'Emotions (24 Items)'}
+          {mode === 'animated' ? 'Emotions' : 'Emotions (24 Items)'}
         </h3>
       </div>
       
       {mode === 'animated' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {emotions.slice(0, 4).map((emotion, index) => (
-            <div key={index} className="relative">
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 ml-1">
-                Emotion {index + 1}
-              </label>
-              <input
-                type="text"
-                value={emotion}
-                onChange={(e) => onChange(index, e.target.value)}
-                placeholder={`Example: ${['开心', '愤怒', '悲伤', '兴奋'][index]}`}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-gray-800 bg-gray-50 focus:bg-white"
-              />
+        <>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+            <span className="text-sm font-semibold text-indigo-900 whitespace-nowrap">GIF Count:</span>
+            <div className="flex gap-2 w-full">
+              {[1, 2, 4].map((count) => (
+                <button
+                  key={count}
+                  onClick={() => onAnimatedCountChange(count as 1 | 2 | 4)}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                    animatedCount === count
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-indigo-300'
+                  }`}
+                >
+                  {count} {count === 1 ? 'GIF' : 'GIFs'}
+                  <span className="hidden sm:inline text-[10px] opacity-80 ml-1 font-normal">
+                    {count === 1 ? '(Long)' : count === 2 ? '(Medium)' : '(Short)'}
+                  </span>
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+
+          <div className={`grid gap-4 mb-6 ${animatedCount === 4 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+            {emotions.slice(0, animatedCount).map((emotion, index) => (
+              <div key={index} className="relative">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 ml-1">
+                  Emotion {index + 1}
+                </label>
+                <input
+                  type="text"
+                  value={emotion}
+                  onChange={(e) => onChange(index, e.target.value)}
+                  placeholder={`Example: ${['开心', '愤怒', '悲伤', '兴奋'][index]}`}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-gray-800 bg-gray-50 focus:bg-white"
+                />
+              </div>
+            ))}
+          </div>
+        </>
       ) : (
         <div className="mb-6">
           <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 ml-1 flex justify-between">
