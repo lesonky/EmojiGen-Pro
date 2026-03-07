@@ -1,0 +1,22 @@
+{
+  "mode": "animated",
+  "animatedCount": 4,
+  "emotions": [
+    "开心",
+    "哭泣",
+    "生气",
+    "点赞"
+  ],
+  "categoryPrompt": "日常生活, 轻松愉快, 常用社交回复",
+  "style": "Q版 LINE",
+  "customText": "",
+  "customTextColor": "#000000",
+  "removeBackground": true,
+  "characterNotes": "保持角色的发型、发色、眼型、服装和头饰辨识度，做高识别度二创。",
+  "propNotes": "根据情绪加入漫符、小道具和特效，但不要遮挡脸部主体。",
+  "negativeNotes": "不要直接复制原图，不要破坏 4x6 网格，不要让格子互相粘连，不要复杂背景。",
+  "imageModel": "gemini-3-pro-image-preview",
+  "imageAspectRatio": "3:2",
+  "imageSize": "2K",
+  "textModel": ""
+}

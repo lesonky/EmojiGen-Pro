@@ -1,0 +1,35 @@
+{
+  "skill_name": "emojigen-nano-banana",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "把我这张头像图做成 4 个动态微信表情，风格要像 Q 版 LINE，情绪分别是开心、委屈、生气、点赞，保留黑色短发和红色卫衣的辨识度。",
+      "expected_output": "Agent should collect the reference image path, create a resolved config, build a single 4x6 prompt, and produce four GIF outputs from the generated or supplied grid.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我已经有一张 4x6 表情网格图了，帮我裁成 24 个静态贴纸 PNG，背景尽量透明，输出到一个新目录。",
+      "expected_output": "Agent should skip generation, use make-assets on the existing grid, and export 24 cropped images with a manifest.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "不要直接开画，先根据职场打工人的语境帮我想 4 个适合做动图的情绪词，再决定是用 Gemini API key 还是 Vertex AI。",
+      "expected_output": "Agent should collect backend information before generation, produce random emotions locally by default, and not start image generation until enough inputs are confirmed or defaulted.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "我刚刚把一张头像图复制到了剪贴板，没有本地路径。先把图存到 tmp，再检查模型和随机情绪词都准备好，最后再决定要不要开画。",
+      "expected_output": "Agent should stage the clipboard image into /tmp, run preflight, resolve random emotions if needed, and avoid starting image generation until the preflight is ready.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "这批动图去背景后脸上出现透明洞了，修一下流程，重新导出一版更安全的透明背景 GIF。",
+      "expected_output": "Agent should use the safer corner-connected background removal path, avoid global color-key transparency, and export new GIF assets without punching transparent holes through the subject.",
+      "files": []
+    }
+  ]
+}

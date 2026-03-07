@@ -1,0 +1,61 @@
+{
+  "mode": "animated",
+  "grid": "/tmp/emojigen-work-20260308-003201/grid.png",
+  "stickersDir": "/tmp/emojigen-work-20260308-003201/stickers",
+  "items": [
+    {
+      "emotion": "收到",
+      "type": "gif",
+      "frames": [
+        "/tmp/emojigen-work-20260308-003201/stickers/收到/frames/01.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/收到/frames/02.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/收到/frames/03.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/收到/frames/04.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/收到/frames/05.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/收到/frames/06.png"
+      ],
+      "output": "/tmp/emojigen-work-20260308-003201/stickers/收到/收到.gif"
+    },
+    {
+      "emotion": "摸鱼",
+      "type": "gif",
+      "frames": [
+        "/tmp/emojigen-work-20260308-003201/stickers/摸鱼/frames/01.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/摸鱼/frames/02.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/摸鱼/frames/03.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/摸鱼/frames/04.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/摸鱼/frames/05.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/摸鱼/frames/06.png"
+      ],
+      "output": "/tmp/emojigen-work-20260308-003201/stickers/摸鱼/摸鱼.gif"
+    },
+    {
+      "emotion": "裂开",
+      "type": "gif",
+      "frames": [
+        "/tmp/emojigen-work-20260308-003201/stickers/裂开/frames/01.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/裂开/frames/02.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/裂开/frames/03.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/裂开/frames/04.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/裂开/frames/05.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/裂开/frames/06.png"
+      ],
+      "output": "/tmp/emojigen-work-20260308-003201/stickers/裂开/裂开.gif"
+    },
+    {
+      "emotion": "先忙",
+      "type": "gif",
+      "frames": [
+        "/tmp/emojigen-work-20260308-003201/stickers/先忙/frames/01.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/先忙/frames/02.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/先忙/frames/03.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/先忙/frames/04.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/先忙/frames/05.png",
+        "/tmp/emojigen-work-20260308-003201/stickers/先忙/frames/06.png"
+      ],
+      "output": "/tmp/emojigen-work-20260308-003201/stickers/先忙/先忙.gif"
+    }
+  ],
+  "prompt": "/tmp/emojigen-work-20260308-003201/prompt.txt",
+  "config": "/tmp/emojigen-work-20260308-003201/resolved-config.json"
+}
