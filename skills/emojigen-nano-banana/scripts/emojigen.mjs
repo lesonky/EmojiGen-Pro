@@ -516,6 +516,11 @@ async function makeAssets({ config, gridPath, outDir }) {
   }
 
   await writeJson(path.join(outDir, 'manifest.json'), manifest);
+  manifest.quality = await assessAssetQuality({
+    manifest,
+    removeBackground: config.removeBackground,
+  });
+  await writeJson(path.join(outDir, 'manifest.json'), manifest);
   return manifest;
 }
 
@@ -593,6 +598,102 @@ async function removeCornerBackground(imagePath) {
     ...corners.flatMap((point) => ['-draw', `color ${point} floodfill`]),
     imagePath,
   ]);
+}
+
+async function assessAssetQuality({ manifest, removeBackground }) {
+  const report = {
+    status: 'ok',
+    warnings: [],
+  };
+
+  if (!removeBackground || manifest.mode !== 'animated') {
+    return report;
+  }
+
+  for (const item of manifest.items) {
+    const frameMetrics = [];
+    for (const framePath of item.frames || []) {
+      const metrics = await getFrameSubjectMetrics(framePath);
+      if (metrics) {
+        frameMetrics.push(metrics);
+      }
+    }
+
+    if (frameMetrics.length === 0) {
+      report.warnings.push(`${item.emotion}: unable to compute subject bounds from transparent frames.`);
+      continue;
+    }
+
+    const side = frameMetrics[0].side;
+    const edgeMargin = side * 0.08;
+    const anchorTolerance = side * 0.1;
+    const nearEdge = frameMetrics.some((metric) =>
+      metric.x < edgeMargin ||
+      metric.y < edgeMargin ||
+      metric.x + metric.width > side - edgeMargin ||
+      metric.y + metric.height > side - edgeMargin,
+    );
+
+    if (nearEdge) {
+      report.warnings.push(`${item.emotion}: subject is too close to the crop edge in at least one frame.`);
+    }
+
+    const anchorX = frameMetrics[0].centerX;
+    const anchorY = frameMetrics[0].centerY;
+    const drifting = frameMetrics.some((metric) =>
+      Math.abs(metric.centerX - anchorX) > anchorTolerance ||
+      Math.abs(metric.centerY - anchorY) > anchorTolerance,
+    );
+
+    if (drifting) {
+      report.warnings.push(`${item.emotion}: subject anchor drifts too much across frames for a stable GIF.`);
+    }
+  }
+
+  if (report.warnings.length > 0) {
+    report.status = 'warn';
+  }
+
+  return report;
+}
+
+async function getFrameSubjectMetrics(framePath) {
+  await ensureCommand('magick');
+  const result = await runCommand('magick', [
+    framePath,
+    '-alpha',
+    'extract',
+    '-threshold',
+    '0',
+    '-trim',
+    '-format',
+    '%@',
+    'info:',
+  ]);
+  const bounds = parseBoundingBox(result.stdout.trim());
+  if (!bounds) {
+    return null;
+  }
+  const { width: side } = await identifyImage(framePath);
+  return {
+    ...bounds,
+    side,
+    centerX: bounds.x + bounds.width / 2,
+    centerY: bounds.y + bounds.height / 2,
+  };
+}
+
+function parseBoundingBox(value) {
+  const match = /^(\d+)x(\d+)\+(\d+)\+(\d+)$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  return {
+    width: Number(match[1]),
+    height: Number(match[2]),
+    x: Number(match[3]),
+    y: Number(match[4]),
+  };
 }
 
 async function createGif({ framePaths, gifPath, delay }) {

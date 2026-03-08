@@ -22,6 +22,8 @@ Do not start generation until you have either explicit answers or safe defaults 
    - Vertex AI via `GOOGLE_GENAI_USE_VERTEXAI=true` plus `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`
    - Another image tool chosen by the agent when Gemini access is unavailable
 
+Before generation, inspect the current reference image and rewrite `characterNotes` for this exact subject. Never reuse stale `characterNotes`, `propNotes`, or style notes from a previous run on a different person.
+
 If the user is adapting the original EmojiGen Pro repository, first reconstruct the workflow from the codebase before you rewrite anything. Preserve the original sequence:
 
 1. Collect or generate emotion labels.
@@ -107,6 +109,8 @@ node skills/emojigen-nano-banana/scripts/emojigen.mjs build-prompt \
   --out path/to/output/prompt.txt
 ```
 
+Do not stop here. `build-prompt` is not the delivery workflow.
+
 ### 4. Generate the 4x6 grid
 
 If Gemini or Vertex AI is available, prefer the built-in generator:
@@ -119,6 +123,8 @@ node skills/emojigen-nano-banana/scripts/emojigen.mjs generate-grid \
 ```
 
 The script rejects image models outside `Nano Banana Pro` and `Nano Banana 2`, and always sends `3:2` + `2K`.
+
+Do not take `prompt.txt` and call a raw image model yourself when the built-in workflow is available. That bypasses the skill's staging, preflight, slicing, background-removal, and quality gates.
 
 If another image tool is a better fit, still use this skill. Build the prompt with this skill, generate the grid elsewhere, then continue with `make-assets`.
 
@@ -134,6 +140,8 @@ node skills/emojigen-nano-banana/scripts/emojigen.mjs make-assets \
 ```
 
 This creates square crops, optional background removal, and GIF outputs for animated mode.
+
+Read `manifest.json` after `make-assets` or `run`. If `manifest.quality.status` is `warn`, do not deliver the result yet. Rerun with stricter `characterNotes`, stronger square-safe composition constraints, or `removeBackground: false`.
 
 Background removal uses a corner-connected flood-fill strategy. This is safer than making every near-background color transparent, and avoids punching holes in faces or clothing when skin tones are similar to the background.
 
@@ -155,6 +163,14 @@ node skills/emojigen-nano-banana/scripts/emojigen.mjs run \
 Use `--deliver-dir` to copy the finished assets into the working directory or a client delivery folder.
 
 Use `--cleanup-temp` after delivery when the outputs were generated under `/tmp/emojigen-*`. macOS may eventually clear `/tmp`, but not immediately enough for agent workflows.
+
+Treat this as the preferred path. The default expectation is:
+
+1. `stage-image`
+2. `preflight`
+3. `run`
+4. inspect `manifest.quality`
+5. deliver only if quality is acceptable
 
 ## Fallback rules
 

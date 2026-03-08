@@ -12,6 +12,7 @@ This skill converts the original browser workflow into a file-based workflow:
 6. Generate a grid image from the reference image.
 7. Slice the grid into square stickers.
 8. Encode GIFs for animated mode or export PNGs for static mode.
+9. Read `manifest.quality` and rerun if warnings indicate edge collisions or anchor drift.
 
 ## Environment variables
 
@@ -104,6 +105,8 @@ node skills/emojigen-nano-banana/scripts/emojigen.mjs build-prompt \
   --out tmp/prompt.txt
 ```
 
+Use this for inspection, not as the final workflow. Do not stop after `build-prompt` and then call a raw model manually unless the built-in generation path is genuinely unavailable.
+
 ### Generate grid only
 
 ```bash
@@ -155,6 +158,12 @@ Delivery and cleanup:
 - `--deliver-dir` copies the finished folder into the working directory or client delivery location.
 - `--cleanup-temp` removes skill-managed `/tmp/emojigen-*` paths after successful delivery.
 
+Quality gate:
+
+- `manifest.quality.status: "ok"` means no obvious crop/anchor issue was detected.
+- `manifest.quality.status: "warn"` means at least one animated sequence is too close to the crop edge or drifts too much across frames.
+- When quality is `warn`, tighten the prompt and rerun before delivery.
+
 Animated mode writes:
 
 - `stickers/<emotion>/frames/*.png`
@@ -172,4 +181,5 @@ Static mode writes:
 - Background removal uses corner-connected flood fill from the four corners. This is much safer than globally removing every similar color and reduces accidental transparency on faces or clothes.
 - If `emotions` is an explicit empty array, the workflow treats that as "generate random emotions"; it does not silently replace them with default labels.
 - Random emotion generation should not require a text model. Use a text model only when the user explicitly wants model-written emotion labels.
+- Before generation, always rewrite `characterNotes` from the current input image. Reusing stale notes from another person is a guaranteed failure mode.
 - If the user wants a different sheet geometry, this skill is the wrong starting point; say so and adjust the workflow deliberately.
