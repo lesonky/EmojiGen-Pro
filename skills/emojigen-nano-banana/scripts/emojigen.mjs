@@ -19,7 +19,7 @@ const DEFAULTS = {
   mode: 'animated',
   animatedCount: 4,
   emotions: ['开心', '哭泣', '生气', '点赞'],
-  style: 'Q版 LINE',
+  style: '皮克斯 3D',
   customText: '',
   customTextColor: '#000000',
   removeBackground: false,
@@ -579,25 +579,57 @@ async function cropFrame({ input, output, side, x, y }) {
 }
 
 async function removeCornerBackground(imagePath) {
-  await ensureCommand('magick');
-  const { width, height } = await identifyImage(imagePath);
-  const corners = [
-    `1,1`,
-    `${Math.max(width - 2, 1)},1`,
-    `1,${Math.max(height - 2, 1)}`,
-    `${Math.max(width - 2, 1)},${Math.max(height - 2, 1)}`,
+  const { width, height, data } = await readRgbaImage(imagePath);
+  const bytes = new Uint8ClampedArray(data);
+  const bgR = bytes[0];
+  const bgG = bytes[1];
+  const bgB = bytes[2];
+  const tolerance = 15;
+
+  const stack = [
+    0,
+    width - 1,
+    (height - 1) * width,
+    (height - 1) * width + (width - 1),
   ];
-  await runCommand('magick', [
-    imagePath,
-    '-alpha',
-    'set',
-    '-fuzz',
-    '10%',
-    '-fill',
-    'none',
-    ...corners.flatMap((point) => ['-draw', `color ${point} floodfill`]),
-    imagePath,
-  ]);
+  const visited = new Uint8Array(width * height);
+
+  const isBackground = (idx) => {
+    const byteIdx = idx * 4;
+    const alpha = bytes[byteIdx + 3];
+    if (alpha === 0) {
+      return false;
+    }
+    return (
+      Math.abs(bytes[byteIdx] - bgR) <= tolerance &&
+      Math.abs(bytes[byteIdx + 1] - bgG) <= tolerance &&
+      Math.abs(bytes[byteIdx + 2] - bgB) <= tolerance
+    );
+  };
+
+  while (stack.length > 0) {
+    const idx = stack.pop();
+    if (visited[idx]) {
+      continue;
+    }
+    visited[idx] = 1;
+
+    if (!isBackground(idx)) {
+      continue;
+    }
+
+    const byteIdx = idx * 4;
+    bytes[byteIdx + 3] = 0;
+
+    const x = idx % width;
+    const y = Math.floor(idx / width);
+    if (x > 0) stack.push(idx - 1);
+    if (x < width - 1) stack.push(idx + 1);
+    if (y > 0) stack.push(idx - width);
+    if (y < height - 1) stack.push(idx + width);
+  }
+
+  await writeRgbaImage(imagePath, width, height, Buffer.from(bytes));
 }
 
 async function assessAssetQuality({ manifest, removeBackground }) {
@@ -710,6 +742,36 @@ async function identifyImage(imagePath) {
     throw new Error(`Failed to identify image size for ${imagePath}`);
   }
   return { width, height };
+}
+
+async function readRgbaImage(imagePath) {
+  await ensureCommand('magick');
+  const { width, height } = await identifyImage(imagePath);
+  const result = await runCommandBuffer('magick', [
+    imagePath,
+    '-alpha',
+    'on',
+    '-depth',
+    '8',
+    'rgba:-',
+  ]);
+  return {
+    width,
+    height,
+    data: result.stdout,
+  };
+}
+
+async function writeRgbaImage(imagePath, width, height, rgbaBuffer) {
+  await ensureCommand('magick');
+  await runCommandBuffer('magick', [
+    '-size',
+    `${width}x${height}`,
+    '-depth',
+    '8',
+    'rgba:-',
+    `PNG32:${imagePath}`,
+  ], rgbaBuffer);
 }
 
 function createClient() {
@@ -953,6 +1015,40 @@ async function runCommand(command, args) {
       }
       reject(new Error(`${command} ${args.join(' ')} failed with code ${code}\n${stderr || stdout}`));
     });
+  });
+}
+
+async function runCommandBuffer(command, args, stdinBuffer = null) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+    const stdoutChunks = [];
+    const stderrChunks = [];
+
+    child.stdout.on('data', (chunk) => {
+      stdoutChunks.push(chunk);
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderrChunks.push(chunk);
+    });
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({
+          code,
+          stdout: Buffer.concat(stdoutChunks),
+          stderr: Buffer.concat(stderrChunks).toString(),
+        });
+        return;
+      }
+      reject(new Error(`${command} ${args.join(' ')} failed with code ${code}\n${Buffer.concat(stderrChunks).toString()}`));
+    });
+
+    if (stdinBuffer) {
+      child.stdin.write(stdinBuffer);
+    }
+    child.stdin.end();
   });
 }
 

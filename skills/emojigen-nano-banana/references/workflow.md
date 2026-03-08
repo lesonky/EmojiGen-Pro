@@ -14,6 +14,8 @@ This skill converts the original browser workflow into a file-based workflow:
 8. Encode GIFs for animated mode or export PNGs for static mode.
 9. Read `manifest.quality` and rerun if warnings indicate edge collisions or anchor drift.
 
+Use `皮克斯 3D` as the default style unless the user asks for another style.
+
 ## Environment variables
 
 The CLI resolves credentials in this order:
