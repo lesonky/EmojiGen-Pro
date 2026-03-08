@@ -11,7 +11,7 @@
   "style": "皮克斯 3D",
   "customText": "",
   "customTextColor": "#000000",
-  "removeBackground": true,
+  "removeBackground": false,
   "characterNotes": "保持角色的发型、发色、眼型、服装和头饰辨识度，做高识别度二创。",
   "propNotes": "根据情绪加入漫符、小道具和特效，但不要遮挡脸部主体。",
   "negativeNotes": "不要直接复制原图，不要破坏 4x6 网格，不要让格子互相粘连，不要复杂背景。",

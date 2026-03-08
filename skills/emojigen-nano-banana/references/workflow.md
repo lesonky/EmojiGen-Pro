@@ -180,6 +180,7 @@ Static mode writes:
 - The workflow assumes a strict 4x6 grid because the original app relies on deterministic cell slicing.
 - Static mode resolves to exactly 24 stickers. Animated mode only supports 1, 2, or 4 GIFs because those counts map cleanly onto the 24 cells.
 - Square-safe composition is mandatory: the subject must stay centered inside each cell, and animated sequences should keep a stable body anchor so the cropped GIF does not jitter.
+- `removeBackground` should default to `false`. Enable it only when the user wants transparent stickers and the generated grid uses a simple flat background.
 - Background removal uses corner-connected flood fill from the four corners. This is much safer than globally removing every similar color and reduces accidental transparency on faces or clothes.
 - If `emotions` is an explicit empty array, the workflow treats that as "generate random emotions"; it does not silently replace them with default labels.
 - Random emotion generation should not require a text model. Use a text model only when the user explicitly wants model-written emotion labels.
